@@ -102,42 +102,6 @@ plt.show()
 
 '''
 
-#Solo algunas med tienen "a"
-m = 'med_5'
-a = Datos[m]['Muestra'][2]['radio']
-N = len(Datos[m]['Frec'])
-RHO_RT,RHO_XY,OMEGA = [],[],[]
-for i in range(N):
-    omega = Datos[m]['Frec'][i]
-    r = float(Datos[m]['R'][i])
-    t = float(Datos[m]['T'][i])
-    x = r*np.cos(t)
-    y = r*np.sin(t)
-    chi_Re = -y/(omega*C)
-    chi_Im = x/(omega*C)
-    Chi_Re_rho = lambda rho: chi(rho,omega,a).real -chi_Re
-    rho_guess_re = 10.0
-    rho_r = fsolve(Chi_Re_rho, rho_guess_re)
-    Chi_Im_rho = lambda rho: chi(rho,omega,a).imag -chi_Im
-    rho_guess_im = 10.0
-    rho_i = fsolve(Chi_Im_rho, rho_guess_im)
-    RHO_RT.append((rho_r,rho_i))
-    x = float(Datos[m]['X'][i])
-    y = float(Datos[m]['Y'][i])
-    chi_Re = -y/(omega*C)
-    chi_Im = x/(omega*C)
-    Chi_Re_rho = lambda rho: chi(rho,omega,a).real -chi_Re
-    rho_guess_re = 10.0
-    rho_r = fsolve(Chi_Re_rho, rho_guess_re)
-    Chi_Im_rho = lambda rho: chi(rho,omega,a).imag -chi_Im
-    rho_guess_im = 10.0
-    rho_i = fsolve(Chi_Im_rho, rho_guess_im)
-    RHO_XY.append((rho_r,rho_i))
-    OMEGA.append(omega)
-
-RHO = [('omega: {}'.format(om),float(rt[0]),float(rt[1]),float(xy[0]),float(xy[1]))
-       for om,rt,xy in zip(OMEGA,RHO_RT,RHO_XY)]
-
 def difer(x):
     x = [t for t in x if t!=10 and type(t)!=str]
     try:
@@ -145,5 +109,63 @@ def difer(x):
     except:
         return 0
 
-RHO.sort(key=difer)
-#for r in RHO: print(r)
+#Solo algunas med tienen "a"
+OMRHO = {}
+for m in ['med_5','med_6','med_7']:
+    a = Datos[m]['Muestra'][2]['radio']
+    N = len(Datos[m]['Frec'])
+    RHO_RT,RHO_XY,OMEGA = [],[],[]
+    for i in range(N):
+        omega = Datos[m]['Frec'][i]
+        r = float(Datos[m]['R'][i])
+        t = float(Datos[m]['T'][i])
+        x = r*np.cos(t)
+        y = r*np.sin(t)
+        chi_Re = -y/(omega*C)
+        chi_Im = x/(omega*C)
+        Chi_Re_rho = lambda rho: chi(rho,omega,a).real -chi_Re
+        rho_guess_re = 10.0
+        rho_r = fsolve(Chi_Re_rho, rho_guess_re)
+        Chi_Im_rho = lambda rho: chi(rho,omega,a).imag -chi_Im
+        rho_guess_im = 10.0
+        rho_i = fsolve(Chi_Im_rho, rho_guess_im)
+        RHO_RT.append((rho_r,rho_i))
+        x = float(Datos[m]['X'][i])
+        y = float(Datos[m]['Y'][i])
+        chi_Re = -y/(omega*C)
+        chi_Im = x/(omega*C)
+        Chi_Re_rho = lambda rho: chi(rho,omega,a).real -chi_Re
+        rho_guess_re = 10.0
+        rho_r = fsolve(Chi_Re_rho, rho_guess_re)
+        Chi_Im_rho = lambda rho: chi(rho,omega,a).imag -chi_Im
+        rho_guess_im = 10.0
+        rho_i = fsolve(Chi_Im_rho, rho_guess_im)
+        RHO_XY.append((rho_r,rho_i))
+        OMEGA.append(omega)
+    RHO = [('omega: {}'.format(om),float(rt[0]),float(rt[1]),float(xy[0]),float(xy[1]))
+           for om,rt,xy in zip(OMEGA,RHO_RT,RHO_XY)]
+    RHO.sort(key=difer)
+    #for r in RHO: print(r)
+    om_rho = {}
+    for x in RHO:
+        if x.count(10) not in [3,4]:
+            if difer(x) < np.inf:
+                try:
+                    om_rho['omega'].append(float(x[0][7:]))
+                    om_rho['rho'].append(np.mean([t for t in x if t!=10 and type(t)!=str]))
+                except:
+                    om_rho['omega'] = [float(x[0][7:])]
+                    om_rho['rho'] = [np.mean([t for t in x if t!=10 and type(t)!=str])]
+    om_rho = list(zip(om_rho['omega'],om_rho['rho']))
+    om_rho.sort(key=lambda x:x[0])
+    om_plot = [x[0] for x in om_rho]
+    rho_plot = [x[1] for x in om_rho]
+    OMRHO[m] = {'omega':om_plot,'rho':rho_plot}
+
+D = OMRHO['med_7']
+#plt.plot(D['omega'],D['rho'],'*',label='Rho')
+Delta = [np.sqrt((2*rho)/(mu*omega)) for rho in D['rho']]
+plt.plot(D['omega'],Delta,'*',label='Delta')
+plt.legend()
+plt.grid()
+plt.show()
